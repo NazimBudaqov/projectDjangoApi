@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <!-- <h1>Student List</h1> -->
+    <!-- Display the student data -->
+    {% for student in data %}
+        <!-- <p>{{ student.student_id }}: {{ student.python }}</p> -->
+        <!-- Display other student fields as needed -->
+    {% endfor %}
+
+    <!-- Form to select specific student by ID -->
+    <form method="get" action="/student-details/">
+        <label for="student_id">Enter Student ID:</label>
+        <input type="text" name="student_id" id="student_id">
+        <button type="submit">Get Details</button>
+    </form>
+{% endblock %}
