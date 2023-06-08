@@ -5,8 +5,8 @@ from django.shortcuts import render
 from rest_framework import generics, status
 import io, csv, pandas as pd
 from rest_framework.response import Response
-from base.models import Student
-
+from base.models import Student, Bootcamp
+import math
 class UploadFileView(generics.CreateAPIView):
     serializer_class = FileUploadSerializer
     
@@ -18,8 +18,12 @@ class UploadFileView(generics.CreateAPIView):
 
         for _, row in reader.iterrows():
             for key, value in row.items():
-                if value == '-':
+                if value == '-' or math.isnan(value):
                     row[key] = 0
+            
+            bootcamp_id = row['Bootcamp_id']
+            bootcamp, _ = Bootcamp.objects.get_or_create(bootcamp_id=bootcamp_id)
+
             
             new_file = Student(
                 student_id = row['Student_id'],
@@ -39,12 +43,30 @@ class UploadFileView(generics.CreateAPIView):
                 critical_thinking=row['Critical Thinking'],
                 leadership=row['Leadership'],
                 soft_average=row['Soft Average'],
-                bootcamp_id=row['Bootcamp_id'],
+                bootcamp=bootcamp,
                 )
             new_file.save()
 
         return Response({"status": "success"},
                         status.HTTP_201_CREATED)
+
+@api_view(['GET'])
+def getBootcampData(request, bootcamp_id):
+    try:
+        students = Student.objects.filter(bootcamp_id=bootcamp_id)
+        serializer = StudentSerializer(students, many=True)
+        return Response(serializer.data)
+    except Student.DoesNotExist:
+        return Response({'error': 'No students found for the specified bootcamp'}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET'])
+def getStudentData(request, student_id):
+    try:
+        student = Student.objects.get(student_id=student_id)
+        serializer = StudentSerializer(student)
+        return Response(serializer.data)
+    except Student.DoesNotExist:
+        return Response({'error': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['GET'])
 def student_details(request):

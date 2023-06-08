@@ -5,7 +5,6 @@ class FileUploadSerializer(serializers.Serializer):
     file = serializers.FileField()
 
 class SaveFileSerializer(serializers.Serializer):
-    
     class Meta:
         model = Student
         fields = "__all__"
