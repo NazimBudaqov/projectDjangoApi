@@ -3,24 +3,51 @@ from rest_framework.decorators import api_view
 from .serializers import StudentSerializer, FileUploadSerializer
 from django.shortcuts import render
 from rest_framework import generics, status
-import io, csv, pandas as pd
+import csv
 from rest_framework.response import Response
 from base.models import Student, Bootcamp
 import math
+
+
 class UploadFileView(generics.CreateAPIView):
     serializer_class = FileUploadSerializer
-    
+
+    def process_csv(self, file):
+        data = []
+        headers = []
+
+        # Decode the uploaded file
+        decoded_file = file.read().decode('utf-8').splitlines()
+
+        # Create a CSV reader
+        csvreader = csv.DictReader(decoded_file)
+
+        # Read the header row
+        headers = csvreader.fieldnames
+
+        # Read and process each row
+        for row in csvreader:
+            data.append(row)
+
+        return headers, data
+
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         file = serializer.validated_data['file']
-        reader = pd.read_csv(file)
-
-        for _, row in reader.iterrows():
+        
+        headers, rows = self.process_csv(file)  # Call the method to process the CSV
+        
+        # for _, row in rows:
+        for row in rows:
             for key, value in row.items():
-                if value == '-' or math.isnan(value):
+                if value == '-':
                     row[key] = 0
-            
+                elif isinstance(value, str) and value.strip() == '':
+                    row[key] = 0
+                elif isinstance(value, float) and math.isnan(value):
+                    row[key] = 0
+                
             bootcamp_id = row['Bootcamp_id']
             bootcamp, _ = Bootcamp.objects.get_or_create(bootcamp_id=bootcamp_id)
 
